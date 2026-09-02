@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Call Training Bot – Prototype</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    h2 { font-size: 1.25rem; margin: 24px 0 12px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    button, .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    input[type="file"] { margin: 10px 0; }
+    .status { margin-top: 10px; font-size: 0.9rem; color: var(--muted); }
+    .call-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .call-item:last-child { border-bottom: none; }
+    .call-meta { font-size: 0.85rem; color: var(--muted); }
+    #chat-box {
+      height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: #f1f5f9;
+      margin-bottom: 12px;
+    }
+    .message {
+      margin-bottom: 12px;
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+    }
+    .message.agent {
+      background: #dbeafe;
+      margin-left: auto;
+      text-align: right;
+    }
+    .message.caller {
+      background: white;
+      border: 1px solid var(--border);
+    }
+    .message .role {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+    #user-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+    .hidden { display: none; }
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .score-item {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .score-item .value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Call Training Bot</h1>
+    <p style="color: var(--muted); margin-bottom: 24px;">Prototype – Upload → Analyze → Roleplay → Score</p>
+
+    <div class="card">
+      <h2>1. Upload Call Recording</h2>
+      <input type="file" id="audio-file" accept="audio/*" />
+      <br/>
+      <button onclick="uploadCall()" id="upload-
