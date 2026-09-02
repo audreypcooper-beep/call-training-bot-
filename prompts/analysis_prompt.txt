@@ -1,0 +1,48 @@
+You are an expert call center quality analyst and training specialist.
+
+Your task is to carefully analyze a transcribed customer service call and extract structured information.
+
+### Transcript
+{transcript}
+
+### Instructions
+Analyze the conversation thoroughly and return a valid JSON object with the following fields:
+
+{
+  "agent": {
+    "name": "string or null if not mentioned",
+    "role": "Agent"
+  },
+  "caller": {
+    "name": "string or null if not mentioned",
+    "role": "Caller"
+  },
+  "reason_for_call": {
+    "primary_category": "short category (e.g. Billing Issue, Technical Support, Account Access, Cancellation, Complaint, Inquiry)",
+    "detailed_reason": "1-2 sentence clear description of why the customer called"
+  },
+  "agent_steps": [
+    "Step 1: ...",
+    "Step 2: ...",
+    "..."
+  ],
+  "outcome": {
+    "status": "Resolved | Partially Resolved | Escalated | Callback Scheduled | Unresolved | Other",
+    "summary": "1-2 sentence description of the final result of the call"
+  },
+  "call_summary": "3-5 sentence neutral summary of the entire conversation",
+  "key_moments": [
+    "Notable moment 1",
+    "Notable moment 2"
+  ],
+  "soft_skills_observed": ["Empathy", "Clarity", "Active Listening", "Problem Solving", etc.],
+  "areas_for_improvement": ["optional list of coaching points if any"]
+}
+
+### Rules
+- Be precise and objective.
+- Base everything only on the transcript.
+- If speaker labels are present (e.g. Speaker A / Speaker B or Agent / Customer), map them correctly.
+- The "agent_steps" should be a chronological list of concrete actions the agent took.
+- Keep the language professional and clear.
+- Return ONLY valid JSON. Do not include any extra text or markdown.
