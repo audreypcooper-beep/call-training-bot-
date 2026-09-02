@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+.venv/
+venv/
+data/audio/*
+data/transcripts/*
+data/results/*
+!data/audio/.gitkeep
+!data/transcripts/.gitkeep
+!data/results/.gitkeep
