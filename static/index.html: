@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Call Training Bot – Prototype</title>
+  <style>
+    :root {
+      --primary: #2563eb;
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 20px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+    h1 { font-size: 1.8rem; margin-bottom: 8px; }
+    h2 { font-size: 1.25rem; margin: 24px 0 12px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    }
+    button, .btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+    button:hover { background: #1d4ed8; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    input[type="file"] { margin: 10px 0; }
+    .status { margin-top: 10px; font-size: 0.9rem; color: var(--muted); }
+    .call-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .call-item:last-child { border-bottom: none; }
+    .call-meta { font-size: 0.85rem; color: var(--muted); }
+    #chat-box {
+      height: 360px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      background: #f1f5f9;
+      margin-bottom: 12px;
+    }
+    .message {
+      margin-bottom: 12px;
+      max-width: 80%;
+      padding: 10px 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+    }
+    .message.agent {
+      background: #dbeafe;
+      margin-left: auto;
+      text-align: right;
+    }
+    .message.caller {
+      background: white;
+      border: 1px solid var(--border);
+    }
+    .message .role {
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      color: var(--muted);
+    }
+    #user-input {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 1rem;
+      margin-bottom: 10px;
+    }
+    .hidden { display: none; }
+    .score-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+    .score-item {
+      background: #f1f5f9;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    .score-item .value { font-size: 1.4rem; font-weight: 700; color: var(--primary); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Call Training Bot</h1>
+    <p style="color: var(--muted); margin-bottom: 24px;">Prototype – Upload → Analyze → Roleplay → Score</p>
+
+    <div class="card">
+      <h2>1. Upload Call Recording</h2>
+      <input type="file" id="audio-file" accept="audio/*" />
+      <br/>
+      <button onclick="uploadCall()" id="upload-btn">Process Call</button>
+      <div class="status" id="upload-status"></div>
+    </div>
+
+    <div class="card">
+      <h2>2. Processed Calls</h2>
+      <button onclick="loadCalls()">Refresh List</button>
+      <div id="calls-list" style="margin-top: 16px;"></div>
+    </div>
+
+    <div class="card hidden" id="roleplay-section">
+      <h2>3. Roleplay Practice</h2>
+      <div id="scenario-info" style="margin-bottom: 12px; font-size: 0.95rem;"></div>
+      <div id="chat-box"></div>
+      <input type="text" id="user-input" placeholder="Type your response as the Agent..." 
+             onkeydown="if(event.key==='Enter') sendMessage()" />
+      <button onclick="sendMessage()" id="send-btn">Send</button>
+      <button onclick="endRoleplay()" style="background:#dc2626; margin-left:8px;">End & Score</button>
+      <div class="status" id="roleplay-status"></div>
+    </div>
+
+    <div class="card hidden" id="evaluation-section">
+      <h2>4. Performance Feedback</h2>
+      <div id="evaluation-content"></div>
+    </div>
+  </div>
+
+  <script>
+    const API = window.location.origin;
+    let currentSession = null;
+
+    async function uploadCall() {
+      const fileInput = document.getElementById("audio-file");
+      const status = document.getElementById("upload-status");
+      const btn = document.getElementById("upload-btn");
+
+      if (!fileInput.files.length) {
+        status.textContent = "Please select an audio file first.";
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("file", fileInput.files[0]);
+
+      btn.disabled = true;
+      status.textContent = "Uploading and processing... this may take 1–3 minutes.";
+
+      try {
+        const res = await fetch(`${API}/process-call`, {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.detail || "Upload failed");
+        }
+
+        const data = await res.json();
+        status.textContent = `Success! File ID: ${data.file_id}`;
+        loadCalls();
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function loadCalls() {
+      const list = document.getElementById("calls-list");
+      list.innerHTML = "Loading...";
+
+      try {
+        const res = await fetch(`${API}/calls`);
+        const data = await res.json();
+
+        if (data.total_calls === 0) {
+          list.innerHTML = "<p style='color:var(--muted)'>No calls processed yet.</p>";
+          return;
+        }
+
+        list.innerHTML = data.calls.map(call => `
+          <div class="call-item">
+            <div>
+              <strong>${call.original_filename || "Unknown"}</strong><br/>
+              <span class="call-meta">
+                ${call.reason_for_call || "—"} · ${call.outcome || "—"} · 
+                ${new Date(call.processed_at).toLocaleString()}
+              </span>
+            </div>
+            <button onclick="startRoleplay('${call.file_id}')">Practice</button>
+          </div>
+        `).join("");
+      } catch (err) {
+        list.innerHTML = "Failed to load calls: " + err.message;
+      }
+    }
+
+    async function startRoleplay(fileId) {
+      const status = document.getElementById("roleplay-status");
+      status.textContent = "Starting roleplay...";
+
+      try {
+        const res = await fetch(`${API}/roleplay/start`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ file_id: fileId, scenario_id: "scenario_1" })
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+
+        currentSession = await res.json();
+
+        document.getElementById("roleplay-section").classList.remove("hidden");
+        document.getElementById("evaluation-section").classList.add("hidden");
+
+        document.getElementById("scenario-info").innerHTML = `
+          <strong>${currentSession.scenario_title}</strong> 
+          <span style="color:var(--muted)">(${currentSession.difficulty})</span>
+        `;
+
+        const chatBox = document.getElementById("chat-box");
+        chatBox.innerHTML = "";
+        appendMessage("caller", currentSession.opening_message);
+
+        status.textContent = "Roleplay started. You are the Agent.";
+        document.getElementById("user-input").focus();
+      } catch (err) {
+        status.textContent = "Error: " + err.message;
+      }
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById("user-input");
+      const text = input.value.trim();
+      if (!text || !currentSession) return;
+
+      appendMessage("agent", text);
+      input.value = "";
+      input.disabled = true;
+      document.getElementById("send-btn").disabled = true;
+
+      try {
+        const res = await fetch(`${API}/roleplay/continue`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            system_prompt: currentSession.system_prompt,
+            messages: currentSession.messages,
+            user_message: text
+          })
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+
+        const data = await res.json();
+        currentSession.messages = data.messages;
+        appendMessage("caller", data.reply);
+      } catch (err) {
+        appendMessage("caller", "[Error] " + err.message);
+      } finally {
+        input.disabled = false;
+        document.getElementById("send-btn").disabled = false;
+        input.focus();
+      }
+    }
+
+    function appendMessage(role, text) {
+      const chatBox = document.getElementById("chat-box");
+      const div = document.createElement("div");
+      div.className = `message ${role}`;
+      div.innerHTML = `<div class="role">${role === "agent" ? "You (Agent)" : "Caller"}</div>${text}`;
+      chatBox.appendChild(div);
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function endRoleplay() {
+      if (!currentSession) return;
+
+      const status = document.getElementById("roleplay-status");
+      status.textContent = "Evaluating performance...";
+
+      try {
+        const res = await fetch(`${API}/roleplay/evaluate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file_id: currentSession.file_id,
+            scenario_id: currentSession.scenario_id,
+            system_prompt: currentSession.system_prompt,
+            messages: currentSession.messages
+          })
+        });
+
+        if (!res.ok) throw new Error((await res.json()).detail);
+
+        const data = await res.json();
+        showEvaluation(data.evaluation);
+        status.textContent = "Evaluation complete.";
+      } catch (err) {
+        status.textContent = "Evaluation failed: " + err.message;
+      }
+    }
+
+    function showEvaluation(evalData) {
+      document.getElementById("evaluation-section").classList.remove("hidden");
+
+      const scoresHtml = Object.entries(evalData.scores || {}).map(([k, v]) => `
+        <div class="score-item">
+          <div class="value">${v}/10</div>
+          <div style="font-size:0.8rem; text-transform:capitalize;">${k.replaceAll("_", " ")}</div>
+        </div>
+      `).join("");
+
+      document.getElementById("evaluation-content").innerHTML = `
+        <div style="font-size:1.6rem; font-weight:700; margin-bottom:8px;">
+          Overall Score: ${evalData.overall_score}/100
+        </div>
+        <div class="score-grid">${scoresHtml}</div>
+
+        <h3 style="margin-top:20px;">Strengths</h3>
+        <ul>${(evalData.strengths || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+        <h3 style="margin-top:16px;">Areas for Improvement</h3>
+        <ul>${(evalData.areas_for_improvement || []).map(s => `<li>${s}</li>`).join("")}</ul>
+
+        <h3 style="margin-top:16px;">Detailed Feedback</h3>
+        <p>${evalData.detailed_feedback || ""}</p>
+
+        <h3 style="margin-top:16px;">Key Coaching Tip</h3>
+        <p><strong>${evalData.key_coaching_tip || ""}</strong></p>
+      `;
+    }
+
+    loadCalls();
+  </script>
+</body>
+</html>
