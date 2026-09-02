@@ -1,0 +1,41 @@
+You are an expert customer service training designer.
+
+Based on the following real call analysis, create high-quality roleplay practice scenarios that trainees can use to improve.
+
+### Call Analysis
+{analysis_json}
+
+### Instructions
+Generate 2 practice scenarios inspired by this real call. Return a valid JSON object:
+
+{
+  "scenarios": [
+    {
+      "id": "scenario_1",
+      "title": "Short descriptive title",
+      "difficulty": "Easy | Medium | Hard",
+      "caller_persona": {
+        "name": "fictional name",
+        "emotional_state": "e.g. Frustrated but polite, Confused, Angry, Anxious, Calm but persistent",
+        "background": "1-2 sentences about the caller's situation and knowledge level"
+      },
+      "situation": "Detailed description of the scenario the trainee will face",
+      "caller_goal": "What the caller ultimately wants",
+      "success_criteria": [
+        "What a successful resolution looks like",
+        "Key behaviors the agent should demonstrate"
+      ],
+      "possible_twists": [
+        "Optional complications the AI caller might introduce"
+      ],
+      "opening_line": "The first thing the AI caller will say when the roleplay starts"
+    }
+  ]
+}
+
+### Guidelines
+- Make the scenarios realistic and useful for training.
+- One scenario should be relatively close to the original call.
+- The second scenario should introduce a meaningful variation (different emotion, extra complication, or different desired outcome).
+- Keep the tone professional and suitable for a training environment.
+- Return ONLY valid JSON.
