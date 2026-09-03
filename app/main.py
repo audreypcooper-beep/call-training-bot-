@@ -1,19 +1,13 @@
 import os
 import shutil
 import uuid
-import jsonrom pathlib import Path
+import json
+from pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Optional
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
-@app.get("/")
-def root():
-    return FileResponse("static/index.html")
-    app.mount("/static", StaticFiles(directory="static"), name="static")
-
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from dotenv import load_dotenv
@@ -29,27 +23,36 @@ app = FastAPI(title="Call Training Bot")
 UPLOAD_DIR = Path("data/audio")
 TRANSCRIPT_DIR = Path("data/transcripts")
 RESULTS_DIR = Path("data/results")
+STATIC_DIR = Path("static")
 
-for d in [UPLOAD_DIR, TRANSCRIPT_DIR, RESULTS_DIR]:
+for d in [UPLOAD_DIR, TRANSCRIPT_DIR, RESULTS_DIR, STATIC_DIR]:
     d.mkdir(parents=True, exist_ok=True)
-
-app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
 class RoleplayStartRequest(BaseModel):
     file_id: str
     scenario_id: Optional[str] = "scenario_1"
 
+
 class RoleplayContinueRequest(BaseModel):
     system_prompt: str
     messages: List[dict]
     user_message: str
+
 
 class RoleplayEvaluateRequest(BaseModel):
     file_id: str
     scenario_id: str = "scenario_1"
     system_prompt: str
     messages: List[dict]
+
+
+@app.get("/")
+def root():
+    index_path = STATIC_DIR / "index.html"
+    if not index_path.exists():
+        raise HTTPException(404, "static/index.html is missing")
+    return FileResponse(index_path)
 
 
 @app.post("/process-call")
@@ -78,11 +81,12 @@ async def process_call_endpoint(file: UploadFile = File(...)):
             "audio_path": str(audio_path),
             "transcript": transcript,
             "analysis": result["analysis"],
-            "scenarios": result["scenarios"]
+            "scenarios": result["scenarios"],
         }
 
         (RESULTS_DIR / f"{file_id}.json").write_text(
-            json.dumps(full_result, indent=2, ensure_ascii=False), encoding="utf-8"
+            json.dumps(full_result, indent=2, ensure_ascii=False),
+            encoding="utf-8",
         )
 
         return JSONResponse(content=full_result)
@@ -141,7 +145,7 @@ async def roleplay_continue(request: RoleplayContinueRequest):
         return continue_roleplay(
             system_prompt=request.system_prompt,
             messages=request.messages,
-            user_message=request.user_message
+            user_message=request.user_message,
         )
     except Exception as e:
         raise HTTPException(500, str(e))
@@ -154,12 +158,12 @@ async def roleplay_evaluate(request: RoleplayEvaluateRequest):
         evaluation = evaluate_roleplay(
             system_prompt=request.system_prompt,
             messages=request.messages,
-            scenario=scenario
+            scenario=scenario,
         )
         return {
             "file_id": request.file_id,
             "scenario_id": request.scenario_id,
-            "evaluation": evaluation
+            "evaluation": evaluation,
         }
     except FileNotFoundError as e:
         raise HTTPException(404, str(e))
@@ -167,10 +171,4 @@ async def roleplay_evaluate(request: RoleplayEvaluateRequest):
         raise HTTPException(500, str(e))
 
 
-@app.get("/")
-def root():
-    return {
-        "message": "Call Training Bot is running",
-        "frontend": "/static/index.html",
-        "docs": "/docs"
-    }
+app.mount("/static", StaticFiles(directory="static"), name="static")
