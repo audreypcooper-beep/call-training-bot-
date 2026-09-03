@@ -1,4 +1,3 @@
-import os
 import shutil
 import uuid
 import json
@@ -20,13 +19,14 @@ load_dotenv()
 
 app = FastAPI(title="Call Training Bot")
 
-UPLOAD_DIR = Path("data/audio")
-TRANSCRIPT_DIR = Path("data/transcripts")
-RESULTS_DIR = Path("data/results")
-STATIC_DIR = Path("static")
+BASE_DIR = Path(__file__).resolve().parent.parent
+UPLOAD_DIR = BASE_DIR / "data" / "audio"
+TRANSCRIPT_DIR = BASE_DIR / "data" / "transcripts"
+RESULTS_DIR = BASE_DIR / "data" / "results"
+STATIC_DIR = BASE_DIR / "static"
 
-for d in [UPLOAD_DIR, TRANSCRIPT_DIR, RESULTS_DIR, STATIC_DIR]:
-    d.mkdir(parents=True, exist_ok=True)
+for folder in [UPLOAD_DIR, TRANSCRIPT_DIR, RESULTS_DIR, STATIC_DIR]:
+    folder.mkdir(parents=True, exist_ok=True)
 
 
 class RoleplayStartRequest(BaseModel):
@@ -51,7 +51,7 @@ class RoleplayEvaluateRequest(BaseModel):
 def root():
     index_path = STATIC_DIR / "index.html"
     if not index_path.exists():
-        raise HTTPException(404, "static/index.html is missing")
+        raise HTTPException(404, f"index.html not found at {index_path}")
     return FileResponse(index_path)
 
 
@@ -171,4 +171,4 @@ async def roleplay_evaluate(request: RoleplayEvaluateRequest):
         raise HTTPException(500, str(e))
 
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
