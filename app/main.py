@@ -1,10 +1,16 @@
 import os
 import shutil
 import uuid
-import json
-from pathlib import Path
+import jsonrom pathlib import Path
 from datetime import datetime, timezone
 from typing import List, Optional
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+@app.get("/")
+def root():
+    return FileResponse("static/index.html")
+    app.mount("/static", StaticFiles(directory="static"), name="static")
+
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import JSONResponse
